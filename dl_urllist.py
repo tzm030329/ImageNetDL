@@ -8,7 +8,10 @@ from urllib import request
 
 def download(url, decode=False, timeout=60):
     response = request.urlopen(url, timeout=timeout)
-    return response.read()
+    body = response.read()
+    if decode == True:
+        body = body.decode()
+    return body
 
 
 if __name__ == '__main__':
