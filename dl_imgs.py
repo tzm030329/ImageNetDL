@@ -5,13 +5,17 @@ import os
 from urllib import request
 from PIL import Image
 import json
-
+import imghdr
+from skimage import io as skio
 
 def download(url, decode=False, timeout=60):
     response = request.urlopen(url, timeout=timeout)
     if response.geturl() == "https://s.yimg.com/pw/images/en-us/photo_unavailable.png":
-        # Flickr :This photo is no longer available iamge.
+        # Flickr
         raise Exception("This photo is no longer available iamge.")
+    elif response.geturl() == 'http://pic.photobucket.com/bwe.png':
+        # photobacket
+        raise Exception("3rd party hosting has been temporarily disabled.")
 
     body = response.read()
     if decode == True:
@@ -55,6 +59,10 @@ if __name__ == '__main__':
 
     print('Number of URLs: %d' % len(urls))
 
+    # make log files
+    os.makedirs('log', exist_ok=True)
+    log = open('log/%04d_%s.txt' % (ii, tid), 'w')
+
     itry, iget = 0, 0
     for url in urls:
         if itry < offset:
@@ -68,20 +76,45 @@ if __name__ == '__main__':
             name, ext = os.path.splitext(tfile)
             ext = ext.lower()
             outdir = 'data/%04d_%s' % (ii, tdir)
+
             if not os.path.exists(outdir):
                 os.makedirs(outdir, exist_ok=True)
             path = '%s/%04d_%04d_%s_%s%s' % (outdir, ii, iget, tid, tdir, ext)
             path = path.strip() # remove \n, \r, \r\n
+
             if not os.path.exists(path):
                 print(path)
                 write(path, download(url, timeout=15))
+
+            # check extension
+            ext2 = imghdr.what(path)
+            if ext2 == None:
+                os.remove(path)
+                continue
+
+            elif ext2 == 'jpeg':
+                path2 = '%s/%04d_%04d_%s_%s.jpg' % (outdir, ii, iget, tid, tdir)
+                os.rename(path, path2)
+            elif ext2 != ext:
+                path2 = '%s/%04d_%04d_%s_%s.%s' % (outdir, ii, iget, tid, tdir, ext2)
+                os.rename(path, path2)
+
+            # check image size
+            img = skio.imread(path2)
+            ma = max(img.shape)
+            print(ma)
+            if ma < 64:
+                os.remove(path2)
+                continue
+
             print('done: %d: %s' % (itry, tfile))
-            iget = iget+1
+            log.write('%s %s\n' % (os.path.basename(path2), os.path.basename(url)))
+            iget += 1
 
         except:
             print("Unexpected error:", sys.exc_info()[0])
             print('done: %d: %s' % (itry, tfile))
 
-        itry = itry+1
+        itry += 1
 
     print("end")
