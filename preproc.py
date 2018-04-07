@@ -35,28 +35,24 @@ def preproc(target):
             print('%s is not an image file !' % ifile)
             continue
 
+        # white image
         if img.std() < 5.0:
             continue
 
+        # color channel > 3
+        if img.shape[2] > 3:
+            continue
+
+        # gray image
         if len(img.shape) == 2:
-            continue
-
-        if len(img.shape) == 4:
-            img = img[0]
-
-        if img.shape[2] == 4:
-            continue
-
-        if min(img.shape[:2]) < 224:
-            interp = cv2.INTER_CUBIC
-        else:
-            interp = cv2.INTER_LINEAR
-
-        ## resize
-        if len(img) == 2:
             print('gray')
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
 
+        # gif anime
+        if len(img.shape) == 4:
+            img = img[0]
+
+        # resize
         h, w, c = img.shape
         if h>w:
             hst, hed = h//2-w//2, h//2+w//2
@@ -64,17 +60,26 @@ def preproc(target):
         else:
             wst, wed = w//2-h//2, w//2+h//2
             img = img[:,wst:wed]
-        interp = cv2.INTER_LINEAR
+
+        if min(img.shape[:2]) < 224:
+            interp = cv2.INTER_CUBIC
+        else:
+            interp = cv2.INTER_LINEAR
+
         img = cv2.resize(img, (224,224), interpolation = interp)
 
+        # to uint8
         img = img.astype(np.uint8)
-        imgs.append(cv2.resize(img, (64,64), interpolation=cv2.INTER_LINEAR))
-        print('%s mean=%.3f std=%.3f' % (name, img.mean(), img.std()), img.shape, len(img.shape))
+        thum = cv2.resize(img, (64,64), interpolation=cv2.INTER_LINEAR)
+        imgs.append(thum)
+        print('%s mean=%.3f std=%.3f'%
+              (name, img.mean(), img.std()), img.shape, len(img.shape))
         skio.imsave('%s/%s.png' % (outdir, name), img)
         i = i+1
 
     print('number of images = %d' %i)
-    imgs = np.array(imgs)[:49]
+    nthum = min(i, 49)
+    imgs = np.array(imgs)[:nthum]
     n,h,w,c = imgs.shape
     m = np.int(np.ceil(np.sqrt(n)))
     add = np.zeros((m**2-n,h,w,c), dtype=np.uint8)
