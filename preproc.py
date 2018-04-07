@@ -85,7 +85,6 @@ def preproc(target):
 
 
 if __name__ == '__main__':
-    main()
 
     dirs = sorted(glob('data/0*'))
     for idir in dirs:
