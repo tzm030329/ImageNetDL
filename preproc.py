@@ -7,10 +7,6 @@ from glob import glob
 from skimage import io as skio
 
 
-def main():
-    pass
-
-
 def preproc(target):
     tid = target.split('_')[0]
 
